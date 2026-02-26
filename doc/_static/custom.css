@@ -1,5 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
 :root {
   --sd-color-primary: #f37726;
+  --pst-font-family-base: "Inter", sans-serif;
+  --pst-font-family-monospace: "JetBrains Mono", monospace;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+}
+
+code, pre, .highlight, .literal, kbd, samp, tt {
+  font-family: "JetBrains Mono", monospace;
 }
 
 a > code {
