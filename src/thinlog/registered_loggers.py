@@ -8,6 +8,7 @@ class RegisteredLoggers:
 
     Loggers are registered automatically when created via :func:`get_logger`.
     """
+
     loggers: ClassVar[set[str]] = set()
 
     @classmethod

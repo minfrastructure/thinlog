@@ -21,6 +21,7 @@ class LoggingSettings:
     :param disable_existing_loggers: If ``True``, disable loggers not in *loggers*.
     :param root: Configuration for the root logger.
     """
+
     version: int = field(default=1)
     formatters: dict[str, dict[str, Any]] = field(default_factory=dict)
     filters: dict[str, dict[str, Any]] = field(default_factory=dict)
