@@ -1,12 +1,16 @@
 """JSON formatter with rich exception context via structlog."""
 
 import json
+import types
 from logging import Formatter, LogRecord
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from structlog import tracebacks
 
 from .. import helper
+
+
+_ExcInfo = tuple[type[BaseException], BaseException, types.TracebackType | None] | tuple[None, None, None]
 
 
 class JsonFormatter(Formatter):
@@ -22,7 +26,7 @@ class JsonFormatter(Formatter):
 
     transformer: ClassVar[tracebacks.ExceptionDictTransformer]
 
-    def __init__(self, show_locals: bool = False, **kwargs):
+    def __init__(self, show_locals: bool = False, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.__class__.transformer = tracebacks.ExceptionDictTransformer(show_locals=show_locals)
 
@@ -30,7 +34,7 @@ class JsonFormatter(Formatter):
         """Return the record as a JSON string."""
         return json.dumps(self.format_record(record), default=str)
 
-    def formatException(self, ei):
+    def formatException(self, ei: _ExcInfo) -> str:
         """Format exception info as a JSON string, falling back to the standard formatter."""
         try:
             return json.dumps(self.format_exception(ei), default=str)
@@ -39,7 +43,7 @@ class JsonFormatter(Formatter):
             return super().formatException(ei)
 
     @classmethod
-    def format_record(cls, record) -> dict:
+    def format_record(cls, record: LogRecord) -> dict[str, Any]:
         """Convert a :class:`~logging.LogRecord` to a plain dict.
 
         Handles ``exc_info`` (via structlog transformer) and ``stack_info``
@@ -69,6 +73,6 @@ class JsonFormatter(Formatter):
         return d
 
     @classmethod
-    def format_exception(cls, ei):
+    def format_exception(cls, ei: _ExcInfo) -> Any:
         """Transform exception info into a structured dict via structlog."""
-        return cls.transformer(ei)
+        return cls.transformer(ei)  # type: ignore[arg-type]

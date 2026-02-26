@@ -2,6 +2,7 @@
 
 import json
 import logging
+from typing import Any
 
 
 class WhitelistFilter(logging.Filter):
@@ -19,14 +20,20 @@ class WhitelistFilter(logging.Filter):
     :param by_attr: Mapping of attribute names to expected values.
     """
 
-    def __init__(self, by_name: list = None, by_msg: list = None, by_attr: dict = None, **kwargs):
+    def __init__(
+        self,
+        by_name: list[str] | None = None,
+        by_msg: list[str] | None = None,
+        by_attr: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         self.allow_by_name = by_name or []
         self.allow_by_msg = by_msg or []
         self.allow_by_attr = by_attr or {}
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         """Return ``True`` if the record matches any whitelist criterion."""
         if record.name in self.allow_by_name:
             return True

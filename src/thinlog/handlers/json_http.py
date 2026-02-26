@@ -3,7 +3,7 @@
 import json
 import logging
 from dataclasses import dataclass
-from typing import Optional, Self
+from typing import Any, ClassVar
 
 import httpx
 
@@ -34,14 +34,14 @@ class JsonHttpHandlerSettings:
     timeout: int = 5
     proxy: str | None = None
 
-    __global_instance = None
+    __global_instance: ClassVar["JsonHttpHandlerSettings | None"] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.__class__.__global_instance:
             self.__class__.__global_instance = self
 
     @classmethod
-    def global_instance(cls) -> Optional[Self]:
+    def global_instance(cls) -> "JsonHttpHandlerSettings | None":
         """Return the first-created settings instance, or ``None``."""
         return cls.__global_instance
 
@@ -56,13 +56,13 @@ class JsonHTTPHandler(logging.Handler):
     :param settings: A :class:`JsonHttpHandlerSettings` or a dict of its fields.
     """
 
-    def __init__(self, settings: JsonHttpHandlerSettings | dict):
+    def __init__(self, settings: JsonHttpHandlerSettings | dict[str, Any]) -> None:
         if isinstance(settings, dict):
             settings = JsonHttpHandlerSettings(**settings)
 
         self.settings = settings
 
-        self._client = None
+        self._client: httpx.Client | None = None
 
         self.url = self.settings.url
         self.headers = self.settings.headers
@@ -71,20 +71,20 @@ class JsonHTTPHandler(logging.Handler):
         super().__init__(level=self.settings.level)
 
     @property
-    def client(self):
+    def client(self) -> httpx.Client:
         """Lazily initialised :class:`httpx.Client`."""
         if not self._client:
             self._client = httpx.Client(timeout=self.settings.timeout, proxy=self.settings.proxy)
 
         return self._client
 
-    def request(self, url, **kwargs):
+    def request(self, url: str, **kwargs: Any) -> Any:
         """Send an HTTP POST and return the parsed JSON response."""
         response = self.client.post(url, **kwargs)
         response.raise_for_status()
         return response.json()
 
-    def json_request(self, url, data, **kwargs):
+    def json_request(self, url: str, data: str | dict[str, Any], **kwargs: Any) -> Any:
         """POST *data* as JSON (parsing it first if it is a string)."""
         if isinstance(data, str):
             data = json.loads(data)
@@ -92,13 +92,13 @@ class JsonHTTPHandler(logging.Handler):
         kwargs["json"] = data
         return self.request(url, **kwargs)
 
-    def close(self):
+    def close(self) -> None:
         """Close the underlying HTTP client."""
         if self._client:
             self._client.close()
             self._client = None
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """Format and POST the record as JSON.
 
         Supports per-record overrides via ``record.handlers_context["json_http"]``:

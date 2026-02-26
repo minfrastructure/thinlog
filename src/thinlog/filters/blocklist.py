@@ -2,6 +2,7 @@
 
 import json
 import logging
+from typing import Any
 
 
 class BlocklistFilter(logging.Filter):
@@ -16,14 +17,20 @@ class BlocklistFilter(logging.Filter):
         Use ``"_any_"`` to block on any value for a given attribute.
     """
 
-    def __init__(self, by_name: list = None, by_msg: list = None, by_attr: dict = None, **kwargs):
+    def __init__(
+        self,
+        by_name: list[str] | None = None,
+        by_msg: list[str] | None = None,
+        by_attr: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         self.skip_by_name = by_name or []
         self.skip_by_msg = by_msg or []
         self.skip_by_attr = by_attr or {}
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         """Return ``False`` if the record matches any blocklist criterion."""
         if record.name in self.skip_by_name:
             return False

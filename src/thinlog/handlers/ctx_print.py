@@ -11,10 +11,10 @@ class CtxPrintHandler(logging.Handler):
     Useful for debugging context filters during development.
     """
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """Print ``record.context`` as a JSON string."""
         try:
-            print(json.dumps(record.context, default=str))  # type: ignore
+            print(json.dumps(record.context, default=str))  # type: ignore[attr-defined]
 
         except AttributeError:
             pass

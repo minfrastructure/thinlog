@@ -1,12 +1,13 @@
 """Factory for creating and registering loggers."""
 
 import logging
+from typing import Any
 
 from .log import KeywordFriendlyLogger
 from .registered_loggers import RegisteredLoggers
 
 
-def get_logger(name, extra, register=True) -> logging.LoggerAdapter:
+def get_logger(name: str, extra: dict[str, Any] | None, register: bool = True) -> KeywordFriendlyLogger:
     """Create a :class:`KeywordFriendlyLogger` and optionally register it.
 
     :param name: Logger name (passed to :func:`logging.getLogger`).

@@ -4,7 +4,7 @@ import logging
 import warnings
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Optional, Self
+from typing import Any, ClassVar
 
 import httpx
 
@@ -40,14 +40,14 @@ class TelegramHandlerSettings:
     disable_web_page_preview: bool = True
     proxy: str | None = None
 
-    __global_instance = None
+    __global_instance: ClassVar["TelegramHandlerSettings | None"] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.__class__.__global_instance:
             self.__class__.__global_instance = self
 
     @classmethod
-    def global_instance(cls) -> Optional[Self]:
+    def global_instance(cls) -> "TelegramHandlerSettings | None":
         """Return the first-created settings instance, or ``None``."""
         return cls.__global_instance
 
@@ -67,13 +67,13 @@ class TelegramHandler(logging.Handler):
 
     API_ENDPOINT = "https://api.telegram.org"
 
-    def __init__(self, settings: TelegramHandlerSettings | dict):
+    def __init__(self, settings: TelegramHandlerSettings | dict[str, Any]) -> None:
         if isinstance(settings, dict):
             settings = TelegramHandlerSettings(**settings)
 
         self.settings = settings
 
-        self._client = None
+        self._client: httpx.Client | None = None
 
         self.token = self.settings.token
         self.disable_web_page_preview = self.settings.disable_web_page_preview
@@ -85,7 +85,7 @@ class TelegramHandler(logging.Handler):
         super().__init__(level=self.settings.level)
 
     @property
-    def client(self):
+    def client(self) -> httpx.Client:
         """Lazily initialised :class:`httpx.Client`."""
         if not self._client:
             self._client = httpx.Client(
@@ -95,36 +95,36 @@ class TelegramHandler(logging.Handler):
         return self._client
 
     @classmethod
-    def format_url(cls, token, method):
+    def format_url(cls, token: str, method: str) -> str:
         """Build a Telegram Bot API URL for the given *method*."""
         return "%s/bot%s/%s" % (cls.API_ENDPOINT, token, method)
 
-    def request(self, method, bot_token: Optional[str] = None, **kwargs):
+    def request(self, method: str, bot_token: str | None = None, **kwargs: Any) -> Any:
         """Call a Telegram Bot API *method* and return the JSON response."""
         url = self.format_url(bot_token or self.token, method)
 
         response = self.client.post(url, **kwargs)
         return response.json()
 
-    def send_message(self, text, **kwargs):
+    def send_message(self, text: str, **kwargs: Any) -> Any:
         """Send a text message via ``sendMessage``."""
-        data = {"text": text}
+        data: dict[str, Any] = {"text": text}
         data.update(kwargs)
         return self.request("sendMessage", json=data)
 
-    def send_document(self, text, document, **kwargs):
+    def send_document(self, text: str, document: BytesIO, **kwargs: Any) -> Any:
         """Send a document with a caption via ``sendDocument``."""
-        data = {"caption": text}
+        data: dict[str, Any] = {"caption": text}
         data.update(kwargs)
         return self.request("sendDocument", data=data, files={"document": ("details.json", document, "text/plain")})
 
-    def close(self):
+    def close(self) -> None:
         """Close the underlying HTTP client."""
         if self._client:
             self._client.close()
             self._client = None
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """Format the record and send it to Telegram.
 
         Short messages are sent via ``sendMessage``; long messages are
@@ -136,7 +136,7 @@ class TelegramHandler(logging.Handler):
             return
 
         if hasattr(self.formatter, "format_advanced"):
-            caption, text = self.formatter.format_advanced(record)
+            caption, text = self.formatter.format_advanced(record)  # type: ignore[union-attr]
 
         else:
             text = self.format(record)
@@ -147,7 +147,7 @@ class TelegramHandler(logging.Handler):
         if not text:
             return
 
-        data = {
+        data: dict[str, Any] = {
             "chat_id": tg_ctx.get("chat_id", self.chat_id),
             "disable_web_page_preview": tg_ctx.get("disable_web_page_preview", self.disable_web_page_preview),
             "disable_notification": tg_ctx.get("disable_notification", self.disable_notification),
@@ -157,7 +157,7 @@ class TelegramHandler(logging.Handler):
             data["message_thread_id"] = tg_ctx.get("topic_id", self.topic_id)
 
         if hasattr(self.formatter, "parse_mode"):
-            data["parse_mode"] = self.formatter.parse_mode
+            data["parse_mode"] = self.formatter.parse_mode  # type: ignore[union-attr]
 
         if tg_ctx.get("token", None):
             data["bot_token"] = tg_ctx["token"]

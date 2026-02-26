@@ -1,9 +1,11 @@
 """Bootstrap logging configuration via :func:`logging.config.dictConfig`."""
 
+import atexit
 import logging.config
 import logging.handlers
+from collections.abc import Iterator
 from dataclasses import asdict
-import atexit
+from typing import Any
 
 from .log import KeywordFriendlyLogger
 from .registered_loggers import RegisteredLoggers
@@ -13,14 +15,14 @@ from .util import get_logger
 
 def configure_logging(
     name: str,
-    config: LoggingSettings | dict,
-    extra: dict = None,
-    more_loggers: list = None,
+    config: LoggingSettings | dict[str, Any],
+    extra: dict[str, Any] | None = None,
+    more_loggers: list[str] | None = None,
     include_default_logger: bool = False,
     include_registered_loggers: bool = False,
     include_root_logger: bool = False,
     disable_log_errors: bool = True,
-) -> logging.LoggerAdapter | KeywordFriendlyLogger:
+) -> KeywordFriendlyLogger:
     """Set up the logging system and return a ready-to-use logger.
 
     Applies the configuration, starts any
@@ -61,14 +63,14 @@ def configure_logging(
 
     more_loggers = list(set(more_loggers))
 
-    def _iter_loggers():
+    def _iter_loggers() -> Iterator[logging.Logger]:
         nonlocal more_loggers
 
         for _lh in more_loggers:
             yield logging.getLogger(_lh)
 
     if not isinstance(config, dict):
-        config = asdict(config)  # type: ignore[type]
+        config = asdict(config)
 
     config.setdefault("loggers", dict())
     config.setdefault("root", dict())
@@ -113,13 +115,13 @@ def configure_logging(
     for _handler_name in logging.getHandlerNames():
         _handler = logging.getHandlerByName(_handler_name)
         if isinstance(_handler, logging.handlers.QueueHandler):
-            listener = _handler.listener  # type: ignore
+            listener = _handler.listener
             break
 
     if listener:
         listener.start()
 
-    def _shutdown_handler():
+    def _shutdown_handler() -> None:
         if listener:
             listener.stop()
 

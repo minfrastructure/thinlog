@@ -1,14 +1,14 @@
 """Internal helpers for parsing stack traces."""
 
 
-def parse_stack_info(stack_str: str) -> list[dict]:
+def parse_stack_info(stack_str: str) -> list[dict[str, str | int | None]]:
     """
     Parse a 'stack_info' string without regex, returning a list of structlog.tracebacks.Stack.
 
     :param stack_str: A string like that from logging.error(..., stack_info=True)
     :return: A list of Stack objects (usually of length 1), each with its frames populated.
     """
-    frames: list[dict] = []
+    frames: list[dict[str, str | int | None]] = []
     lines = stack_str.splitlines()
 
     for idx, raw in enumerate(lines):

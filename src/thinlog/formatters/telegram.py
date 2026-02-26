@@ -21,7 +21,7 @@ class TelegramFormatter(logging.Formatter):
     MAX_MESSAGE_LEN = 4096
     MAX_CAPTION_LEN = 1024
 
-    def format_advanced(self, record):
+    def format_advanced(self, record: logging.LogRecord) -> tuple[str | None, str]:
         """Return a ``(caption, text)`` tuple for Telegram delivery.
 
         * If the message fits in a single Telegram message, *caption* is
@@ -39,7 +39,7 @@ class TelegramFormatter(logging.Formatter):
         del coded_escaped
         return f"<code>{escaped[: self.MAX_CAPTION_LEN]}</code>", msg
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         """Format the record message, pretty-printing JSON if possible."""
         msg = record.getMessage()
         try:
