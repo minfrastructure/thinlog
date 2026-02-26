@@ -1,0 +1,119 @@
+# Thinlog
+
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
+[![PyPI version](https://img.shields.io/pypi/v/thinlog.svg)](https://pypi.org/project/thinlog/)
+[![License](https://img.shields.io/pypi/l/thinlog.svg)](https://pypi.org/project/thinlog/)
+[![Typed](https://img.shields.io/badge/typing-strict-green.svg)](https://mypy.readthedocs.io/)
+
+A lightweight, fully-typed Python logging toolkit — a thin wrapper on the standard `logging` library with extra wheels.
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Concepts](#concepts)
+  - [configure\_logging](#configure_logging)
+  - [Wildcard Loggers](#wildcard-loggers)
+  - [Filters](#filters)
+  - [Handlers](#handlers)
+  - [Formatters](#formatters)
+- [Documentation](#documentation)
+
+## Features
+
+- **Wildcard logger configuration** — define a `"*"` logger and have it applied to every registered logger.
+- **Keyword-friendly logging** — pass keyword arguments directly; they become `extra` fields.
+- **Advanced filters** — whitelist, blocklist, and conditional attribute assignment via TOML config.
+- **Structured JSON output** — rich exception context powered by [structlog](https://www.structlog.org/).
+- **Remote logging** — send logs to an HTTP endpoint or Telegram chat out of the box.
+- **Fully typed** — strict MyPy compliance with a `py.typed` PEP 561 marker.
+
+## Installation
+
+```bash
+pip install thinlog
+```
+
+## Quick Start
+
+**config.toml:**
+
+```toml
+[logging]
+root = {level = "DEBUG", handlers = ["queue"]}
+
+[logging.formatters]
+json = {"()" = "thinlog.formatters.json.JsonFormatter", show_locals = false}
+msg = {"()" = "thinlog.formatters.msg.MsgFormatter"}
+
+[logging.handlers]
+stream = {class = "logging.StreamHandler", level = "DEBUG", stream = "ext://sys.stderr", formatter = "msg"}
+queue = {class = "logging.handlers.QueueHandler", handlers = ["stream"], formatter = "json", respect_handler_level = true}
+```
+
+**app.py:**
+
+```python
+import tomllib
+from pathlib import Path
+from thinlog import configure_logging
+
+config = tomllib.loads(Path("config.toml").read_text())
+log_gen = configure_logging("myapp", config["logging"])
+logger = next(log_gen)
+
+logger.info("Hello from Thinlog!")
+logger.warning("Something happened", user_id=42, ip="10.0.0.1")
+
+# Shuts down listeners and flushes handlers
+log_gen.close()
+```
+
+## Concepts
+
+### configure\_logging
+
+`configure_logging` is a **generator function**. Call `next()` to get the logger. When done, close the generator to stop QueueHandler listeners and flush handlers.
+
+### Wildcard Loggers
+
+Define a `"*"` logger in your config and it will be applied to all registered loggers. Use `"merge": true` on a specific logger to extend rather than replace the wildcard config.
+
+```toml
+[logging.loggers]
+"*" = {level = "INFO", handlers = ["queue"]}
+
+[logging.loggers.trace_log]
+merge = true
+handlers = ["trace_handler"]
+```
+
+### Filters
+
+- **WhitelistFilter** — allow records matching name, message, or attribute patterns.
+- **BlocklistFilter** — block matching records (inverse of whitelist).
+- **AssignerFilter** — conditionally assign attributes to matching records without blocking any.
+
+```toml
+[logging.filters]
+skip_noisy = {"()" = "thinlog.filters.blocklist.BlocklistFilter", by_name = ["urllib3", "httpx"]}
+```
+
+### Handlers
+
+- **JsonHTTPHandler** — send JSON logs via HTTP POST with per-record URL/header overrides.
+- **TelegramHandler** — send logs to Telegram; auto-splits long messages into document attachments.
+- **CtxPrintHandler** — print record context as JSON to stdout for development.
+
+### Formatters
+
+- **JsonFormatter** — full record as JSON with structured exception tracebacks.
+- **MsgFormatter** — plain message string only.
+- **TelegramFormatter** — HTML-formatted output with length-aware splitting.
+
+## Documentation
+
+Full documentation is available at [minfrastructure.github.io/thinlog](https://minfrastructure.github.io/thinlog).
+
+This module is fully typed and compatible with [MyPy](https://mypy.readthedocs.io/en/stable/) out of the box. Please open an [issue](https://github.com/minfrastructure/thinlog/issues) for any suggestions or bugs.

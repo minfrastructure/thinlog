@@ -1,0 +1,45 @@
+name: Docs
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install .[doc]
+
+      - name: Build docs
+        run: |
+          sphinx-apidoc -o doc/ -d 4 --separate -M -a --ext-autodoc --ext-todo --ext-coverage --ext-viewcode ./src
+          sphinx-build -b html doc/ doc/_build/html
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: doc/_build/html
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
