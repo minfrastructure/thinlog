@@ -8,13 +8,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "thinlog"
 description = "Log toolkit"
+readme = { file = "README.md", content-type = "text/markdown" }
 keywords = [
     "log",
     "logging",
 ]
 dynamic = [
-    "version",
-    "readme",
+    "version"
 ]
 dependencies = [
     "rich >=14.1.0",
@@ -69,11 +69,6 @@ where = [
 
 [tool.setuptools.dynamic.version]
 attr = "thinlog.__version__.__version__"
-
-[tool.setuptools.dynamic.readme]
-file = [
-    "README.md",
-]
 
 [tool.distutils.build]
 build-base = ".caches/build"
