@@ -3,9 +3,10 @@ Configuration
 
 Thinlog builds on Python's :func:`logging.config.dictConfig`.  You write your
 logging configuration as a TOML file (or a dict) and pass it to
-:func:`~thinlog.configure_logging`, which applies the config, manages
-:class:`~logging.handlers.QueueHandler` listeners, and yields a ready-to-use
-logger.
+:func:`~thinlog.configure_logging`, which applies the config, starts any
+:class:`~logging.handlers.QueueHandler` listener, and returns a ready-to-use
+logger.  Cleanup (stopping listeners, flushing handlers) is handled
+automatically via an :func:`atexit` handler.
 
 LoggingSettings
 ---------------
@@ -46,8 +47,7 @@ Load and apply it:
    from thinlog import configure_logging
 
    config = tomllib.loads(Path("config.toml").read_text())
-   log_gen = configure_logging("myapp", config["logging"])
-   logger = next(log_gen)
+   logger = configure_logging("myapp", config["logging"])
 
 Wildcard logger (``"*"``)
 --------------------------
@@ -74,13 +74,12 @@ registered in :class:`~thinlog.RegisteredLoggers`:
    db_logger = get_logger("db", {"component": "db"})
 
    # Later, at startup:
-   log_gen = configure_logging(
+   logger = configure_logging(
        "myapp",
        config["logging"],
        include_registered_loggers=True,
        include_default_logger=True,
    )
-   logger = next(log_gen)
    # Now "auth", "db", and "myapp" all have the wildcard config applied.
 
 Merge (``"merge": true``)
@@ -117,7 +116,8 @@ thread within each worker:
    queue = {class = "logging.handlers.QueueHandler", handlers = ["stream"], formatter = "json", respect_handler_level = true}
 
 :func:`~thinlog.configure_logging` automatically detects the ``QueueHandler``,
-starts its listener on entry, and stops it on generator exit.
+starts its listener, and registers an :func:`atexit` handler to stop it on
+interpreter exit.
 
 Separate loggers per component
 -------------------------------
@@ -169,19 +169,16 @@ queue:
    from thinlog import configure_logging
 
    config = tomllib.loads(Path("dev.toml").read_text())
-   log_gen = configure_logging(
+   logger = configure_logging(
        "myapp",
        config["logging"],
        extra={"component": "api"},
        include_default_logger=True,
        include_registered_loggers=True,
    )
-   logger = next(log_gen)
 
    logger.info("Service started")
    logger.error("Something broke", exc_info=True)
-
-   log_gen.close()
 
 See :doc:`filters` for adding filters to this configuration.
 

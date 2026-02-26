@@ -26,23 +26,9 @@ The simplest way to use Thinlog is with a root-level config:
    from thinlog import configure_logging
 
    config = tomllib.loads(Path("config.toml").read_text())
-   log_gen = configure_logging("myapp", config["logging"])
-   logger = next(log_gen)
+   logger = configure_logging("myapp", config["logging"])
 
    logger.info("Hello from Thinlog!")
-
-:func:`~thinlog.configure_logging` is a **generator**.  Call ``next()`` to
-obtain the logger.  When you are done, iterate past the yield (or close the
-generator) to shut down listeners and flush handlers:
-
-.. code-block:: python
-
-   # Option A: manual
-   log_gen.close()
-
-   # Option B: exhaust the generator
-   for _ in log_gen:
-       pass
 
 Console logging with StreamHandler
 -----------------------------------
@@ -65,8 +51,7 @@ A slightly richer setup that logs to ``stderr``:
    from thinlog import configure_logging
 
    config = tomllib.loads(Path("config.toml").read_text())
-   log_gen = configure_logging("myapp", config["logging"])
-   logger = next(log_gen)
+   logger = configure_logging("myapp", config["logging"])
 
    logger.info("Logged to stderr")
    logger.debug("Debug details", request_id="abc-123")
@@ -112,17 +97,14 @@ behind a :class:`~logging.handlers.QueueHandler` for thread-safe, non-blocking d
    from thinlog import configure_logging
 
    config = tomllib.loads(Path("config.toml").read_text())
-   log_gen = configure_logging("myapp", config["logging"])
-   logger = next(log_gen)
+   logger = configure_logging("myapp", config["logging"])
 
    logger.warning("Something happened", user_id=42)
 
-   # When done — stops QueueHandler listener and flushes
-   log_gen.close()
-
 The ``QueueHandler`` offloads formatting and I/O to a background thread, keeping
 the calling thread fast.  :func:`~thinlog.configure_logging` automatically
-detects and starts/stops the listener.
+detects and starts the listener, and registers an :func:`atexit` handler to
+stop it on interpreter exit.
 
 Keyword arguments as extra fields
 ----------------------------------

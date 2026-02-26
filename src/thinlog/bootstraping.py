@@ -3,7 +3,7 @@
 import logging.config
 import logging.handlers
 from dataclasses import asdict
-from typing import Generator
+import atexit
 
 from .log import KeywordFriendlyLogger
 from .registered_loggers import RegisteredLoggers
@@ -20,20 +20,20 @@ def configure_logging(
     include_registered_loggers: bool = False,
     include_root_logger: bool = False,
     disable_log_errors: bool = True,
-) -> Generator[KeywordFriendlyLogger]:
-    """Set up the logging system and yield a ready-to-use logger.
+) -> logging.LoggerAdapter | KeywordFriendlyLogger:
+    """Set up the logging system and return a ready-to-use logger.
 
-    This is a **generator function** -- use it with a ``with`` statement or
-    call ``next()`` / iterate over it.  On entry it applies the configuration
-    and starts any :class:`~logging.handlers.QueueHandler` listener; on exit
-    it stops the listener and calls :func:`logging.shutdown`.
+    Applies the configuration, starts any
+    :class:`~logging.handlers.QueueHandler` listener, and registers an
+    :func:`atexit` handler that stops the listener and calls
+    :func:`logging.shutdown` on interpreter exit.
 
     **Wildcard loggers:** If the *config* contains a logger named ``"*"``, its
     settings are copied to every logger listed in *more_loggers* (and those
     gathered from :class:`RegisteredLoggers`).  A specific logger can set
     ``"merge": true`` to extend rather than replace the wildcard config.
 
-    :param name: Name of the primary logger to yield.
+    :param name: Name of the primary logger to return.
     :param config: A :class:`LoggingSettings` instance or a raw dict suitable
         for :func:`logging.config.dictConfig`.
     :param extra: Default *extra* fields for the returned logger.
@@ -45,7 +45,7 @@ def configure_logging(
         root logger as well.
     :param disable_log_errors: If ``True`` (default), set
         :data:`logging.raiseExceptions` to ``False``.
-    :returns: A generator yielding a single :class:`KeywordFriendlyLogger`.
+    :returns: A :class:`KeywordFriendlyLogger` instance.
     """
     if disable_log_errors:
         logging.raiseExceptions = False
@@ -119,9 +119,11 @@ def configure_logging(
     if listener:
         listener.start()
 
-    yield get_logger(name, extra)  # type: ignore
+    def _shutdown_handler():
+        if listener:
+            listener.stop()
 
-    if listener:
-        listener.stop()
+        logging.shutdown()
 
-    logging.shutdown()
+    atexit.register(_shutdown_handler)
+    return get_logger(name, extra)

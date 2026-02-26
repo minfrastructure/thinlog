@@ -60,21 +60,29 @@ from pathlib import Path
 from thinlog import configure_logging
 
 config = tomllib.loads(Path("config.toml").read_text())
-log_gen = configure_logging("myapp", config["logging"])
-logger = next(log_gen)
+logger = configure_logging("myapp", config["logging"])
 
 logger.info("Hello from Thinlog!")
 logger.warning("Something happened", user_id=42, ip="10.0.0.1")
-
-# Shuts down listeners and flushes handlers
-log_gen.close()
 ```
+
+From any other location/library or file if you need a specific logger you can simply do:
+```python
+from thinlog import get_logger
+
+logger = get_logger("my_other_specific_logger", dict(more="data", we="can pass"))
+
+# Rest of the file...
+```
+
+> **A recommendation**: Context(ctx) is good, use context everywhere, your app can have its own context, every request can
+> have its own ctx so you can easily access your resources(e.g myapp logger) from ctx.
 
 ## Concepts
 
 ### configure\_logging
 
-`configure_logging` is a **generator function**. Call `next()` to get the logger. When done, close the generator to stop QueueHandler listeners and flush handlers.
+`configure_logging` is a plain function that returns a ready-to-use logger. It registers an `atexit` handler that automatically stops QueueHandler listeners and flushes handlers on interpreter exit.
 
 ### Wildcard Loggers
 
