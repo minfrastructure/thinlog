@@ -36,7 +36,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Topic :: Utilities",
     "Typing :: Typed",
-    "License :: OSI Approved :: MIT License",
 ]
 requires-python = ">=3.12"
 
