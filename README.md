@@ -67,7 +67,7 @@ logger.info("app_started")
 logger.warning("processing_payment_failed", user_id=42, ip="10.0.0.1")
 ```
 
-From any other location/library or file if you need a specific logger you can simply do:
+From any other component or file if you need a specific logger you can simply do:
 ```python
 from thinlog import get_logger
 
@@ -94,6 +94,17 @@ logger.error("The payment gateway timed out while processing order 512")
 ```
 
 Structured keys are easy to match with filters, trivial to `GROUP BY` in a log aggregation system, and never require fragile regular expressions to parse. Pair them with keyword arguments for all variable data and you get logs that are both compact and rich in context.
+
+Since this library is optimized so that each component have its own logger, the `key` can be short and optimized.
+```python
+from thinlog import get_logger
+
+logger = get_logger("my_other_specific_logger", dict(more="data", we="can pass"))
+logger.error("request_failed", id=2)
+# If there are multiple loggers with the key set to `request_failed`, it won't conflict.
+# since it belongs to `my_other_specific_logger`, 
+# we can easily find the cause and easily filterable in logging stacks.
+```
 
 ### configure\_logging
 
