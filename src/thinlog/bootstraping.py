@@ -69,7 +69,10 @@ def configure_logging(
         for _lh in more_loggers:
             yield logging.getLogger(_lh)
 
-    if not isinstance(config, dict):
+    if isinstance(config, dict):
+        config.setdefault('version', 1)
+
+    else:
         config = asdict(config)
 
     config.setdefault("loggers", dict())
