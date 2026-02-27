@@ -13,6 +13,7 @@ A lightweight, fully-typed Python logging toolkit — a thin wrapper on the stan
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Concepts](#concepts)
+  - [Structured Log Keys](#structured-log-keys)
   - [configure\_logging](#configure_logging)
   - [Wildcard Loggers](#wildcard-loggers)
   - [Filters](#filters)
@@ -62,8 +63,8 @@ from thinlog import configure_logging
 config = tomllib.loads(Path("config.toml").read_text())
 logger = configure_logging("myapp", config["logging"])
 
-logger.info("Hello from Thinlog!")
-logger.warning("Something happened", user_id=42, ip="10.0.0.1")
+logger.info("app_started")
+logger.warning("processing_payment_failed", user_id=42, ip="10.0.0.1")
 ```
 
 From any other location/library or file if you need a specific logger you can simply do:
@@ -79,6 +80,20 @@ logger = get_logger("my_other_specific_logger", dict(more="data", we="can pass")
 > have its own ctx so you can easily access your resources(e.g myapp logger) from ctx.
 
 ## Concepts
+
+### Structured Log Keys
+
+Thinlog treats the first argument of a log call as a **machine-readable key**, not a human-readable sentence. Use lowercase, underscore-separated identifiers that describe the event:
+
+```python
+# Preferred — a stable, searchable key
+logger.error("payment_gateway_timeout", order_id=512, gateway="stripe")
+
+# Avoid — a free-form sentence that is hard to filter or aggregate
+logger.error("The payment gateway timed out while processing order 512")
+```
+
+Structured keys are easy to match with filters, trivial to `GROUP BY` in a log aggregation system, and never require fragile regular expressions to parse. Pair them with keyword arguments for all variable data and you get logs that are both compact and rich in context.
 
 ### configure\_logging
 

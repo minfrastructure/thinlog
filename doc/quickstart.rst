@@ -28,7 +28,7 @@ The simplest way to use Thinlog is with a root-level config:
    config = tomllib.loads(Path("config.toml").read_text())
    logger = configure_logging("myapp", config["logging"])
 
-   logger.info("Hello from Thinlog!")
+   logger.info("app_started")
 
 Console logging with StreamHandler
 -----------------------------------
@@ -53,8 +53,8 @@ A slightly richer setup that logs to ``stderr``:
    config = tomllib.loads(Path("config.toml").read_text())
    logger = configure_logging("myapp", config["logging"])
 
-   logger.info("Logged to stderr")
-   logger.debug("Debug details", request_id="abc-123")
+   logger.info("logging_initialized")
+   logger.debug("request_received", request_id="abc-123")
 
 Rich handler
 ------------
@@ -99,7 +99,7 @@ behind a :class:`~logging.handlers.QueueHandler` for thread-safe, non-blocking d
    config = tomllib.loads(Path("config.toml").read_text())
    logger = configure_logging("myapp", config["logging"])
 
-   logger.warning("Something happened", user_id=42)
+   logger.warning("suspicious_activity_detected", user_id=42)
 
 The ``QueueHandler`` offloads formatting and I/O to a background thread, keeping
 the calling thread fast.  :func:`~thinlog.configure_logging` automatically
@@ -115,11 +115,31 @@ arguments that become ``extra`` fields on the log record:
 
 .. code-block:: python
 
-   logger.info("User signed in", user_id=42, ip="10.0.0.1")
+   logger.info("user_signed_in", user_id=42, ip="10.0.0.1")
    # The record now has record.user_id = 42 and record.ip = "10.0.0.1"
 
 This is especially useful with :class:`~thinlog.formatters.JsonFormatter`,
 which serialises the entire record (including extra fields) as JSON.
+
+Structured log keys
+-------------------
+
+Thinlog treats the first argument of a log call as a **machine-readable key**,
+not a human-readable sentence.  Use lowercase, underscore-separated identifiers
+that describe the event:
+
+.. code-block:: python
+
+   # Avoid — free-form text is hard to filter and aggregate
+   logger.warning("The user failed to sign in from the dashboard", user_id=42)
+
+   # Prefer — a stable, searchable key with variable data in keyword arguments
+   logger.warning("user_sign_in_failed", user_id=42, source="dashboard")
+
+Structured keys are easy to match with filters, trivial to ``GROUP BY`` in a
+log aggregation system, and never require fragile regular expressions to parse.
+Pair them with keyword arguments (see above) for all variable data and you get
+logs that are both compact and rich in context.
 
 Next steps
 ----------

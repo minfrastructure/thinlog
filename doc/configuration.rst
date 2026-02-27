@@ -137,7 +137,7 @@ A recommended pattern for microservices:
    from thinlog import get_logger
 
    logger = get_logger("mylib.auth", {"component": "auth"})
-   logger.info("Token validated", user_id=42)
+   logger.info("token_validated", user_id=42)
 
 Full example
 ------------
@@ -177,8 +177,8 @@ queue:
        include_registered_loggers=True,
    )
 
-   logger.info("Service started")
-   logger.error("Something broke", exc_info=True)
+   logger.info("service_started")
+   logger.error("unhandled_exception", exc_info=True)
 
 See :doc:`filters` for adding filters to this configuration.
 
